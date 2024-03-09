@@ -1,7 +1,6 @@
 # Keyball61 miniZoneファームウェア カスタマイズ
 
-[takachicompany](https://github.com/takashicompany/qmk_firmware/assets/4215759mofcb52261-c998-403f-87d8-aca8a3f2261d
-)さんのファームウェアを私に合うようにカスタマイズしたものです。
+[takachicompany](https://zenn.dev/takashicompany/articles/69b87160cda4b9)さんのファームウェアを私に合うようにカスタマイズしたものです。
 
 ## 特徴
 

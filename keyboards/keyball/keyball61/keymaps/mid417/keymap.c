@@ -28,7 +28,7 @@ enum custom_keycodes {
     KC_MY_BTN3,
     KC_MY_SCR,
     KC_TO_CLICKABLE_INC,
-    KC_TO_CLICKABLE_DEC,f
+    KC_TO_CLICKABLE_DEC
 };
 
 
@@ -41,13 +41,13 @@ enum click_state {
 };
 
 typedef union {
-  uint32_t raw;
-  struct {
-    // int16_t to_clickable_time; // // この秒数(千分の一秒)、WAITING状態ならクリックレイヤーが有効になる。  For this number of seconds (milliseconds), if in WAITING state, the click layer is activated.
-    int16_t to_clickable_movement;
-    bool mouse_scroll_v_reverse;
-    bool mouse_scroll_h_reverse;
-  };
+    uint32_t raw;
+    struct {
+        // int16_t to_clickable_time; // // この秒数(千分の一秒)、WAITING状態ならクリックレイヤーが有効になる。  For this number of seconds (milliseconds), if in WAITING state, the click layer is activated.
+        int16_t to_clickable_movement;
+        bool mouse_scroll_v_reverse;
+        bool mouse_scroll_h_reverse;
+    };
 } user_config_t;
 
 user_config_t user_config;
@@ -56,9 +56,9 @@ enum click_state state;     // 現在のクリック入力受付の状態 Curren
 uint16_t click_timer;       // タイマー。状態に応じて時間で判定する。 Timer. Time to determine the state of the system.
 
 // uint16_t to_clickable_time = 50;   // この秒数(千分の一秒)、WAITING状態ならクリックレイヤーが有効になる。  For this number of seconds (milliseconds), if in WAITING state, the click layer is activated.
-uint16_t to_reset_time = 300; // この秒数(千分の一秒)、CLICKABLE状態ならクリックレイヤーが無効になる。 For this number of seconds (milliseconds), the click layer is disabled if in CLICKABLE state.
+uint16_t to_reset_time = 800; // この秒数(千分の一秒)、CLICKABLE状態ならクリックレイヤーが無効になる。 For this number of seconds (milliseconds), the click layer is disabled if in CLICKABLE state.
 
-const uint16_t click_layer = 3;   // マウス入力が可能になった際に有効になるレイヤー。Layers enabled when mouse input is enabled
+const uint16_t click_layer = 4;   // マウス入力が可能になった際に有効になるレイヤー。Layers enabled when mouse input is enabled
 
 int16_t scroll_v_mouse_interval_counter;   // 垂直スクロールの入力をカウントする。　Counting Vertical Scroll Inputs
 int16_t scroll_h_mouse_interval_counter;   // 水平スクロールの入力をカウントする。  Counts horizontal scrolling inputs.
@@ -77,7 +77,7 @@ int16_t mouse_movement;
 
 void eeconfig_init_user(void) {
     user_config.raw = 0;
-    user_config.to_clickable_movement = 50;
+    user_config.to_clickable_movement = 5;
     user_config.mouse_scroll_v_reverse = true;
     user_config.mouse_scroll_h_reverse = true;
     eeconfig_update_user(user_config.raw);
@@ -126,7 +126,7 @@ bool is_clickable_mode(void) {
 }
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    
+
     switch (keycode) {
         case KC_MY_BTN1:
         case KC_MY_BTN2:
@@ -136,7 +136,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
             // どこのビットを対象にするか。 Which bits are to be targeted?
             uint8_t btn = 1 << (keycode - KC_MY_BTN1);
-            
+
             if (record->event.pressed) {
                 // ビットORは演算子の左辺と右辺の同じ位置にあるビットを比較して、両方のビットのどちらかが「1」の場合に「1」にします。
                 // Bit OR compares bits in the same position on the left and right sides of the operator and sets them to "1" if either of both bits is "1".
@@ -162,8 +162,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             } else {
                 enable_click_layer();   // スクロールキーを離した時に再度クリックレイヤーを有効にする。 Enable click layer again when the scroll key is released.
             }
-         return false;
-        
+            return false;
+
         case KC_TO_CLICKABLE_INC:
             if (record->event.pressed) {
                 user_config.to_clickable_movement += 5; // user_config.to_clickable_time += 10;
@@ -188,16 +188,16 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 eeconfig_update_user(user_config.raw);
             }
             return false;
-        
-         default:
+
+        default:
             if  (record->event.pressed) {
-                
+
                 if (state == CLICKING || state == SCROLLING)
                 {
                     enable_click_layer();
                     return false;
                 }
-                
+
                 for (int i = 0; i < sizeof(ignore_disable_mouse_layer_keys) / sizeof(ignore_disable_mouse_layer_keys[0]); i++)
                 {
                     if (keycode == ignore_disable_mouse_layer_keys[i])
@@ -206,11 +206,27 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     }
                 }
 
+                // VPN RDPで、CTRL/SHIFT/ALTがうまく判定されない場合があるので対処してみる。
                 disable_click_layer();
+                uint8_t mod_state = get_mods();
+                if (mod_state & MOD_MASK_CTRL)
+                {
+                    register_code(KC_LCTL);
+                }
+
+                if (mod_state & MOD_MASK_SHIFT)
+                {
+                    register_code(KC_LSFT);
+                }
+
+                if (mod_state & MOD_MASK_ALT)
+                {
+                    register_code(KC_LALT);
+                }
             }
-        
+
     }
-   
+
     return true;
 }
 
@@ -222,7 +238,7 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
     int16_t current_v = 0;
 
     if (current_x != 0 || current_y != 0) {
-        
+
         switch (state) {
             case CLICKABLE:
                 click_timer = timer_read();
@@ -255,7 +271,7 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
                             scroll_v_mouse_interval_counter -= scroll_v_threshold;
                             rep_v -= scroll_v_threshold;
                         }
-                        
+
                     }
                 } else {
 
@@ -315,7 +331,7 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
                 }
                 break;
 
-             case WAITING:
+            case WAITING:
                 if (timer_elapsed(click_timer) > 50) {
                     mouse_movement = 0;
                     state = NONE;
@@ -343,18 +359,35 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
 #ifdef OLED_ENABLE
 
 #    include "lib/oledkit/oledkit.h"
+static const char PROGMEM logo[] = {
+    0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x8f, 0x90, 0x91, 0x92, 0x93, 0x94,
+    0xa0, 0xa1, 0xa2, 0xa3, 0xa4, 0xa5, 0xa6, 0xa7, 0xa8, 0xa9, 0xaa, 0xab, 0xac, 0xad, 0xae, 0xaf, 0xb0, 0xb1, 0xb2, 0xb3, 0xb4,
+    0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7, 0xc8, 0xc9, 0xca, 0xcb, 0xcc, 0xcd, 0xce, 0xcf, 0xd0, 0xd1, 0xd2, 0xd3, 0xd4,
+    0};
+
+void oledkit_render_logo_user(void) {
+    // マウスレイヤーの場合、ロゴの白黒を反転させる
+    oled_write_P(logo, (get_highest_layer(layer_state) == click_layer));
+}
 
 void oledkit_render_info_user(void) {
     keyball_oled_render_keyinfo();
     keyball_oled_render_ballinfo();
-    
-    oled_write_P(PSTR("Layer:"), false);
-    oled_write(get_u8_str(get_highest_layer(layer_state), ' '), false);
-    oled_write_P(PSTR(" MV:"), false);
-    oled_write(get_u8_str(mouse_movement, ' '), false);
-    oled_write_P(PSTR("/"), false);
-    oled_write(get_u8_str(user_config.to_clickable_movement, ' '), false);
+
+    // マウスレイヤーの場合、文字色の白黒を反転させる
+    bool isClicklayer = (get_highest_layer(layer_state) == click_layer);
+    oled_write_P(PSTR("Layer:"), isClicklayer);
+    oled_write(get_u8_str(get_highest_layer(layer_state), ' '), isClicklayer);
+    oled_write_P(PSTR("  MV:"), isClicklayer);
+    oled_write(get_u8_str(mouse_movement, ' '), isClicklayer);
+    oled_write_P(PSTR("/"), isClicklayer);
+    oled_write(get_u8_str(user_config.to_clickable_movement, ' '), isClicklayer);
 }
+
+oled_rotation_t oled_init_user(oled_rotation_t rotation) {
+    return is_keyboard_left() ? OLED_ROTATION_180 : rotation;
+}
+
 #endif
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -381,6 +414,14 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______  , _______  , KC_4     , KC_5     , KC_6     ,S(KC_SCLN),                                  KC_PGUP  , KC_BTN1  , KC_DOWN  , KC_BTN2  , KC_BTN3  , _______  ,
         _______  , _______  , KC_1     , KC_2     , KC_3     ,S(KC_MINS), S(KC_8)  ,            S(KC_9)  , KC_PGDN  , _______  , _______  , _______  , _______  , _______  ,
         _______  , _______  , KC_0     , KC_DOT   , _______  , _______  , _______  ,             KC_DEL  , _______  , _______  , _______  , _______  , _______  , _______
+    ),
+
+    LAYOUT_universal(
+        RGB_TOG  , _______  , _______  , _______  , _______  , _______  ,                                  RGB_M_P  , RGB_M_B  , RGB_M_R  , RGB_M_SW , RGB_M_SN , RGB_M_K  ,
+        RGB_MOD  , RGB_HUI  , RGB_SAI  , RGB_VAI  , _______  , _______  ,                                  RGB_M_X  , RGB_M_G  , RGB_M_T  , RGB_M_TW , _______  , _______  ,
+        RGB_RMOD , RGB_HUD  , RGB_SAD  , RGB_VAD  , _______  , _______  ,                                  CPI_D1K  , CPI_D100 , CPI_I100 , CPI_I1K  , KBC_SAVE , KBC_RST  ,
+        _______  , _______  , SCRL_DVD , SCRL_DVI , SCRL_MO  , SCRL_TO  , EE_CLR  ,            EE_CLR  , KC_HOME  , KC_PGDN  , KC_PGUP  , KC_END   , _______  , _______  ,
+        QK_BOOT    , _______  , KC_LEFT  , KC_DOWN  , KC_UP    , KC_RGHT  , _______  ,            _______  , KC_BSPC  , _______  , _______  , _______  , _______  , QK_BOOT
     ),
 
     LAYOUT_universal(

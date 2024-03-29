@@ -36,4 +36,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define TAP_CODE_DELAY 5
 #define DYNAMIC_KEYMAP_LAYER_COUNT 5
 
-#define SPLIT_LAYER_STATE_ENABLE    // レイヤー情報をサブキーボードに送信する
+#define SPLIT_LAYER_STATE_ENABLE        // レイヤー情報をサブキーボードに送信する
+#define KEYBOARD_MOD_PACKET_DELAY 50    // RDPの修飾キー抜け対策  https://github.com/qmk/qmk_firmware/pull/19405
+#define KEYBALL_CPI_DEFAULT 1100        // CPIのデフォルト値を1100に設定

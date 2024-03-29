@@ -56,7 +56,7 @@ enum click_state state;     // 現在のクリック入力受付の状態 Curren
 uint16_t click_timer;       // タイマー。状態に応じて時間で判定する。 Timer. Time to determine the state of the system.
 
 // uint16_t to_clickable_time = 50;   // この秒数(千分の一秒)、WAITING状態ならクリックレイヤーが有効になる。  For this number of seconds (milliseconds), if in WAITING state, the click layer is activated.
-uint16_t to_reset_time = 800; // この秒数(千分の一秒)、CLICKABLE状態ならクリックレイヤーが無効になる。 For this number of seconds (milliseconds), the click layer is disabled if in CLICKABLE state.
+uint16_t to_reset_time = 500; // この秒数(千分の一秒)、CLICKABLE状態ならクリックレイヤーが無効になる。 For this number of seconds (milliseconds), the click layer is disabled if in CLICKABLE state.
 
 const uint16_t click_layer = 4;   // マウス入力が可能になった際に有効になるレイヤー。Layers enabled when mouse input is enabled
 
@@ -206,23 +206,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     }
                 }
 
-                // VPN RDPで、CTRL/SHIFT/ALTがうまく判定されない場合があるので対処してみる。
                 disable_click_layer();
-                uint8_t mod_state = get_mods();
-                if (mod_state & MOD_MASK_CTRL)
-                {
-                    register_code(KC_LCTL);
-                }
-
-                if (mod_state & MOD_MASK_SHIFT)
-                {
-                    register_code(KC_LSFT);
-                }
-
-                if (mod_state & MOD_MASK_ALT)
-                {
-                    register_code(KC_LALT);
-                }
             }
 
     }
@@ -390,6 +374,7 @@ oled_rotation_t oled_init_user(oled_rotation_t rotation) {
 
 #endif
 
+// clang-format off
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     LAYOUT_universal(
@@ -432,3 +417,4 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______  , _______  , _______  , _______  , _______  , _______  , _______  ,            _______  , _______  , _______  , _______  , _______  , _______  , _______
     ),
 };
+// clang-format on
